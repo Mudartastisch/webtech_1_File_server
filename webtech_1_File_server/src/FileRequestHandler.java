@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.List;
 
 /**
  * Request handler for HTTP/1.1 GET requests.
@@ -17,6 +18,7 @@ public class FileRequestHandler {
     private static final String NEW_LINE = System.lineSeparator();
     private String[] args;
     private String buffer;
+    private List<String> bufferList;
 
     public FileRequestHandler(Path documentRoot) {
         this.documentRoot = documentRoot;
@@ -50,7 +52,7 @@ public class FileRequestHandler {
         response.write(NEW_LINE.getBytes());
         
     	response.write(Arrays.toString(args).getBytes());
-        
+        response.write(NEW_LINE.getBytes());
         
     	if(!(args.length == 3)) {response.write(status_message(400).getBytes()); return;}
     	if(!Files.exists(path) && !Files.exists(http_root)) {response.write(status_message(404).getBytes()); return;}
@@ -62,8 +64,9 @@ public class FileRequestHandler {
     	response.write(status_message(200).getBytes());
         response.write(NEW_LINE.getBytes());
     	
-    	buffer = "DATE: "+getHttpDate()+"\n";
+    	buffer = "DATE: "+getHttpDate();
     	response.write(buffer.getBytes());
+        response.write(NEW_LINE.getBytes());
     	
     	buffer = "Content-Type: "+Files.probeContentType(path);
     	response.write(buffer.getBytes());
@@ -73,13 +76,19 @@ public class FileRequestHandler {
     	response.write(buffer.getBytes());
         response.write(NEW_LINE.getBytes());
     	
-    	buffer = "Last-Modified: "+Files.getLastModifiedTime(path).toHttpDate();
+    	buffer = "Last-Modified: "+toHttpDate(Files.getLastModifiedTime(path).toMillis());
     	response.write(buffer.getBytes());
+        response.write(NEW_LINE.getBytes());
         response.write(NEW_LINE.getBytes());
     	
-    	buffer = Arrays.toString(Files.readAllBytes(path));
-    	response.write(buffer.getBytes());
-        response.write(NEW_LINE.getBytes());
+        bufferList = Files.readAllLines(path);
+        for (String bufferList_local : bufferList) {
+            buffer = bufferList_local;
+            response.write(buffer.getBytes());
+            response.write(NEW_LINE.getBytes());
+        }
+    	
+        
         /*
          * (a) Determine status code of the request and write proper status
          * line to the response output stream.
