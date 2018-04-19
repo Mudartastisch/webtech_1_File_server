@@ -1,9 +1,9 @@
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -43,43 +43,63 @@ public class FileRequestHandler {
         
     	args = request.split(" ");
     	Path path = Paths.get(s+"/src/"+args[1]);  
-    	Path http_root = Paths.get(s+"/src/www-root/"+args[1]);
+    	Path www_root = Paths.get(s+"/src/www-root/"+args[1]);
         
     	if(!(args.length == 3)) {response.write(status_message(400).getBytes()); return;}
-    	if(!Files.exists(path) && !Files.exists(http_root)) {response.write(status_message(404).getBytes()); return;}
+    	if(!Files.exists(path) && !Files.exists(www_root)) {response.write(status_message(404).getBytes()); return;}
     	if(!(args[0].equals("GET"))) {response.write(status_message(501).getBytes()); return;}
     	if(!(args[2].equals("HTTP/1.1"))) {response.write(status_message(505).getBytes()); return;}
     	
     	//task b
-    	if(Files.exists(http_root)) {path = http_root;};
-    	response.write(status_message(200).getBytes());
-        response.write(NEW_LINE.getBytes());
-    	
-    	buffer = "DATE: "+getHttpDate();
-    	response.write(buffer.getBytes());
-        response.write(NEW_LINE.getBytes());
-    	
-    	buffer = "Content-Type: "+Files.probeContentType(path);
-    	response.write(buffer.getBytes());
-        response.write(NEW_LINE.getBytes());
-    	
-    	buffer = "Content-Length: "+Long.toString(Files.size(path));
-    	response.write(buffer.getBytes());
-        response.write(NEW_LINE.getBytes());
-    	
-    	buffer = "Last-Modified: "+toHttpDate(Files.getLastModifiedTime(path).toMillis());
-    	response.write(buffer.getBytes());
-        response.write(NEW_LINE.getBytes());
-        response.write(NEW_LINE.getBytes());
-    	
-        bufferList = Files.readAllLines(path);
-        for (String bufferList_local : bufferList) {
-            buffer = bufferList_local;
+        Path target = new File(path.toUri()).toPath();//File does not accept path, so path->URI->path :shrug:
+        if(Files.exists(www_root)) {path = www_root;}
+        if(Files.isRegularFile(target)){
+            
+            response.write(status_message(200).getBytes());
+            response.write(NEW_LINE.getBytes());
+
+            buffer = "DATE: "+getHttpDate();
             response.write(buffer.getBytes());
             response.write(NEW_LINE.getBytes());
-        }
+
+            buffer = "Content-Type: "+Files.probeContentType(path);
+            response.write(buffer.getBytes());
+            response.write(NEW_LINE.getBytes());
+
+            buffer = "Content-Length: "+Long.toString(Files.size(path));
+            response.write(buffer.getBytes());
+            response.write(NEW_LINE.getBytes());
+
+            buffer = "Last-Modified: "+toHttpDate(Files.getLastModifiedTime(path).toMillis());
+            response.write(buffer.getBytes());
+            response.write(NEW_LINE.getBytes());
+            response.write(NEW_LINE.getBytes());
+
+            bufferList = Files.readAllLines(path);
+            for (String bufferList_local : bufferList) {
+                buffer = bufferList_local;
+                response.write(buffer.getBytes());
+                response.write(NEW_LINE.getBytes());
+            }
     	
-        
+        }
+        if(Files.isDirectory(target)){
+            buffer = "DATE: "+getHttpDate();
+            response.write(buffer.getBytes());
+            response.write(NEW_LINE.getBytes());
+            
+            File directory = new File(path.toUri());
+            File[] fList = directory.listFiles();
+            for (File file : fList) {
+                if (file.isFile()) { 
+                    buffer = file.getName() + "   " + toHttpDate(Files.getLastModifiedTime(file.toPath()).toMillis());
+                } else if (file.isDirectory()) {
+                    buffer = file.getName();
+                        }
+                response.write(buffer.getBytes());
+                response.write(NEW_LINE.getBytes());
+            }
+        }
         /*
          * (a) Determine status code of the request and write proper status
          * line to the response output stream.
