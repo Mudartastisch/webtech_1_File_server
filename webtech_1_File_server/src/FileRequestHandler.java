@@ -40,32 +40,35 @@ public class FileRequestHandler {
      */
     public void handle(String request, OutputStream response)
     throws IOException {
-    	//task a
+    	//Setting an absolute path because windows does not like to run with relative paths
         Path currentRelativePath = Paths.get("");
         String s = currentRelativePath.toAbsolutePath().toString();
         
+        //Splitting the requests helps to parse it
+        //The paths are set here already to use them as 404 evaluation
+        //They are relative to the directory were the server was build
     	args = request.split(" ");
     	Path path = Paths.get(s+"/src/"+args[1]);  
     	Path www_root = Paths.get(s+"/src/www-root/"+args[1]);
         
+        //this is not very fancy, but it works
+        //maybe this all could be wrapped into a loop at a later point to reduce the typing affort for the use
     	if(!(args.length == 3)) {response.write(status_message(400).getBytes()); return;}
     	if(!Files.exists(path) && !Files.exists(www_root)) {response.write(status_message(404).getBytes()); return;}
     	if(!(args[0].equals("GET"))) {response.write(status_message(501).getBytes()); return;}
     	if(!(args[2].equals("HTTP/1.1"))) {response.write(status_message(505).getBytes()); return;}
     	response.write(status_message(200).getBytes());
         
+        
+        //I assume that you would prefer the files in the root directory
         if(Files.exists(www_root)) {path = www_root;}
         Path target = new File(path.toUri()).toPath();//File does not accept path, so path->URI->path :shrug:        
-        System.out.println("Files.isRegularFile(target): "+Files.isRegularFile(target));
-        System.out.println("Files.isDirectory(target): "+Files.isDirectory(target));
-        
         
         
         if(Files.isRegularFile(target)){
-            
 
             response.write(NEW_LINE.getBytes());
-
+            //setting the headers with their own response it not best-practise, maybe work on that later
             buffer = "DATE: " + getHttpDate();
             response.write(buffer.getBytes());
             response.write(NEW_LINE.getBytes());
@@ -82,7 +85,7 @@ public class FileRequestHandler {
             response.write(buffer.getBytes());
             response.write(NEW_LINE.getBytes());
             response.write(NEW_LINE.getBytes());
-
+            //This will prob. break if none text files are read
             bufferList = Files.readAllLines(target);
             for (String bufferList_local : bufferList) {
                 buffer = bufferList_local;
@@ -101,6 +104,7 @@ public class FileRequestHandler {
             response.write(NEW_LINE.getBytes());
             response.write(NEW_LINE.getBytes());
             
+            //I guess it would be worth a try to use an Arraylist instead
             buffer = "Content: Name + [Last modified (if it is a file)]";
             response.write(buffer.getBytes());
             response.write(NEW_LINE.getBytes());
@@ -116,20 +120,8 @@ public class FileRequestHandler {
                 response.write(NEW_LINE.getBytes());
             }
         }
-        /*
-         * (a) Determine status code of the request and write proper status
-         * line to the response output stream.
-         *
-         * Only continue if the request can be processed (status code 200).
-         * In case the path points to a file (b) or a directory (c) write the
-         * appropriate header fields and …
-         *
-         * (b) … the content of the file …
-         * (c) … a listing of the directory contents …
-         *
-         * … to the response output stream.
-         */
     }
+    
     //Map status message to status code
     public String status_message(int code) {
     	switch(code) {
@@ -141,6 +133,7 @@ public class FileRequestHandler {
     	default: return "Unkown Error";
     	}
     }
+    
     public String getHttpDate() {
     // Proper date format as per RFC 2616 (HTTP/1.1):
     // https://tools.ietf.org/html/rfc2616#section-3.3.1
