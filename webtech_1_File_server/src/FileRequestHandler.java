@@ -11,6 +11,9 @@ import java.util.List;
 
 /**
  * Request handler for HTTP/1.1 GET requests.
+ * This version is intended for a Netbeans 8.0.2 project structure.
+ * Critical lines for this are the definition of path and www_root.
+ * remove the /src/ to use if the build is inside the directory as www_root
  */
 public class FileRequestHandler {
 
@@ -49,33 +52,38 @@ public class FileRequestHandler {
     	if(!Files.exists(path) && !Files.exists(www_root)) {response.write(status_message(404).getBytes()); return;}
     	if(!(args[0].equals("GET"))) {response.write(status_message(501).getBytes()); return;}
     	if(!(args[2].equals("HTTP/1.1"))) {response.write(status_message(505).getBytes()); return;}
-    	
-    	//task b
-        Path target = new File(path.toUri()).toPath();//File does not accept path, so path->URI->path :shrug:
+    	response.write(status_message(200).getBytes());
+        
         if(Files.exists(www_root)) {path = www_root;}
+        Path target = new File(path.toUri()).toPath();//File does not accept path, so path->URI->path :shrug:        
+        System.out.println("Files.isRegularFile(target): "+Files.isRegularFile(target));
+        System.out.println("Files.isDirectory(target): "+Files.isDirectory(target));
+        
+        
+        
         if(Files.isRegularFile(target)){
             
-            response.write(status_message(200).getBytes());
+
             response.write(NEW_LINE.getBytes());
 
-            buffer = "DATE: "+getHttpDate();
+            buffer = "DATE: " + getHttpDate();
             response.write(buffer.getBytes());
             response.write(NEW_LINE.getBytes());
 
-            buffer = "Content-Type: "+Files.probeContentType(path);
+            buffer = "Content-Type: " + Files.probeContentType(target);
             response.write(buffer.getBytes());
             response.write(NEW_LINE.getBytes());
 
-            buffer = "Content-Length: "+Long.toString(Files.size(path));
+            buffer = "Content-Length: " + Long.toString(Files.size(target));
             response.write(buffer.getBytes());
             response.write(NEW_LINE.getBytes());
 
-            buffer = "Last-Modified: "+toHttpDate(Files.getLastModifiedTime(path).toMillis());
+            buffer = "Last-Modified: " + toHttpDate(Files.getLastModifiedTime(target).toMillis());
             response.write(buffer.getBytes());
             response.write(NEW_LINE.getBytes());
             response.write(NEW_LINE.getBytes());
 
-            bufferList = Files.readAllLines(path);
+            bufferList = Files.readAllLines(target);
             for (String bufferList_local : bufferList) {
                 buffer = bufferList_local;
                 response.write(buffer.getBytes());
@@ -84,11 +92,19 @@ public class FileRequestHandler {
     	
         }
         if(Files.isDirectory(target)){
-            buffer = "DATE: "+getHttpDate();
+            buffer = "DATE: " + getHttpDate();
             response.write(buffer.getBytes());
             response.write(NEW_LINE.getBytes());
             
-            File directory = new File(path.toUri());
+            buffer = "Last-Modified: " + toHttpDate(Files.getLastModifiedTime(target).toMillis());
+            response.write(buffer.getBytes());
+            response.write(NEW_LINE.getBytes());
+            response.write(NEW_LINE.getBytes());
+            
+            buffer = "Content: Name + [Last modified (if it is a file)]";
+            response.write(buffer.getBytes());
+            response.write(NEW_LINE.getBytes());
+            File directory = new File(target.toUri());
             File[] fList = directory.listFiles();
             for (File file : fList) {
                 if (file.isFile()) { 
