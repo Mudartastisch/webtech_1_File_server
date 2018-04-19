@@ -40,19 +40,10 @@ public class FileRequestHandler {
     	//task a
         Path currentRelativePath = Paths.get("");
         String s = currentRelativePath.toAbsolutePath().toString();
-        System.out.println("Current relative path is: " + s);
         
     	args = request.split(" ");
     	Path path = Paths.get(s+"/src/"+args[1]);  
-        response.write(NEW_LINE.getBytes());
     	Path http_root = Paths.get(s+"/src/www-root/"+args[1]);
-        response.write(http_root.toString().getBytes());
-        System.out.println("!Files.exists(path) "+Boolean.toString(!Files.exists(path)));
-        System.out.println("!Files.exists(http_root) "+ Boolean.toString(!Files.exists(http_root)));
-        response.write(NEW_LINE.getBytes());
-        
-    	response.write(Arrays.toString(args).getBytes());
-        response.write(NEW_LINE.getBytes());
         
     	if(!(args.length == 3)) {response.write(status_message(400).getBytes()); return;}
     	if(!Files.exists(path) && !Files.exists(http_root)) {response.write(status_message(404).getBytes()); return;}
