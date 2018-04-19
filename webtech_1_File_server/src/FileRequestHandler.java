@@ -64,7 +64,6 @@ public class FileRequestHandler {
     	
     	buffer = "DATE: "+getHttpDate()+"\n";
     	response.write(buffer.getBytes());
-        response.write(NEW_LINE.getBytes());
     	
     	buffer = "Content-Type: "+Files.probeContentType(path);
     	response.write(buffer.getBytes());
@@ -74,7 +73,7 @@ public class FileRequestHandler {
     	response.write(buffer.getBytes());
         response.write(NEW_LINE.getBytes());
     	
-    	buffer = "Last-Modified: "+Files.getLastModifiedTime(path).toString();
+    	buffer = "Last-Modified: "+Files.getLastModifiedTime(path).toHttpDate();
     	response.write(buffer.getBytes());
         response.write(NEW_LINE.getBytes());
     	
@@ -112,5 +111,15 @@ public class FileRequestHandler {
     	String httpDateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz";
     	DateFormat dateFormat = new SimpleDateFormat(httpDateFormat);
     	return dateFormat.format(new Date());
+    }
+    
+    public String toHttpDate(long Millis) {
+        /**
+         * I need something to convert my FileTime from Files.getLastModifiedTime(path).
+         * This will convert take the long created by the FileTime.toMillis to give me my time in the HttpDateFormat.
+         */
+        String httpDateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz";
+    	DateFormat dateFormat = new SimpleDateFormat(httpDateFormat);
+    	return dateFormat.format(Millis);
     }
 }
